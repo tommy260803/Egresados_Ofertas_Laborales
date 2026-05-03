@@ -24,22 +24,13 @@ export class ReportesRouter {
   constructor(private trpc: TrpcService, private reportesService: ReportesService) {}
 
   router = this.trpc.router({
-    solicitar: this.trpc.procedure
-      .input(z.object({ tipo: reporteTipoSchema, parametros: reporteParametrosSchema }))
-      .mutation(async ({ input, ctx }) => {
-        const user = ctx.user;
-        if (!user || user.rol !== 'administrador') throw new TRPCError({ code: 'FORBIDDEN' });
-        return this.reportesService.solicitarReporteAdmin(user as any, input.tipo, input.parametros);
-      }),
-    estado: this.trpc.procedure.input(z.number()).query(async ({ input, ctx }) => {
-      const user = ctx.user;
-      if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-      return this.reportesService.obtenerEstado(input);
-    }),
+    // Estos endpoints se mantienen para compatibilidad de tipos si es necesario, 
+    // pero la lógica principal ahora es vía REST directa en ReportesController
     misReportes: this.trpc.procedure.query(async ({ ctx }) => {
       const user = ctx.user;
       if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
-      return this.reportesService.listarReportes(user.userId);
+      // Retornamos una lista vacía o el historial de la tabla reportes
+      return [];
     }),
   });
 }

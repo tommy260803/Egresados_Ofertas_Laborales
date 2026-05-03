@@ -7,14 +7,14 @@ import { Usuario } from '../auth/entities/usuario.entity';
 import { Response } from 'express';
 import * as fs from 'fs';
 
-class SolicitarReporteDto {
+interface SolicitarReporteDto {
   tipo:
     | 'egresados_por_carrera'
     | 'ofertas_activas'
     | 'postulaciones_por_oferta'
     | 'empleabilidad_por_carrera'
     | 'habilidades_mas_demandadas';
-  parametros: {
+  parametros?: {
     fechaDesde?: string;
     fechaHasta?: string;
     carrera?: string;
@@ -28,26 +28,35 @@ class SolicitarReporteDto {
 export class ReportesController {
   constructor(private service: ReportesService) {}
 
+  @Post('generar')
+  @Roles('administrador')
+  async generar(
+    @CurrentUser() user: Usuario,
+    @Body() body: any,
+    @Res() res: Response
+  ) {
+    try {
+      console.log('tipo:', body.tipo);
+      console.log('parametros:', body.parametros);
+      
+      const { buffer, filename } = await this.service.generarReporteSync(user, body.tipo, body.parametros);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      res.send(buffer);
+    } catch (error) {
+      console.error('Error al generar reporte:', error);
+      res.status(500).json({ 
+        error: 'Error al generar el reporte', 
+        message: error.message,
+        details: error.stack 
+      });
+    }
+  }
+
   @Post('solicitar')
   @Roles('administrador')
-  async solicitar(@CurrentUser() user: Usuario, @Body() dto: SolicitarReporteDto) {
-    return this.service.solicitarReporteAdmin(user, dto.tipo, dto.parametros);
-  }
-
-  @Get('estado/:id')
-  @Roles('administrador')
-  estado(@Param('id') id: string) {
-    return this.service.obtenerEstado(+id);
-  }
-
-  @Get('descargar/:id')
-  @Roles('administrador')
-  async descargar(@Param('id') id: string, @Res() res: Response) {
-    const reporte = await this.service.obtenerEstado(+id);
-    if (reporte.estado !== 'completado' || !reporte.url_pdf) throw new Error('No disponible');
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=reporte_${reporte.id_reporte}.pdf`);
-    const stream = fs.createReadStream(reporte.url_pdf);
-    stream.pipe(res);
+  async solicitar(@CurrentUser() user: Usuario, @Body() body: any, @Res() res: Response) {
+    return this.generar(user, body, res);
   }
 }

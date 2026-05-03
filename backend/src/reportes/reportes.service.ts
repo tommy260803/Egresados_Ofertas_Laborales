@@ -1,6 +1,4 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { InjectQueue } from '@nestjs/bull';
-import { Queue } from 'bull';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Reporte } from './entities/reporte.entity';
@@ -10,6 +8,7 @@ import { join } from 'path';
 import { Egresado } from '../egresados/entities/egresado.entity';
 import { OfertaLaboral } from '../ofertas/entities/oferta-laboral.entity';
 import { Postulacion } from '../ofertas/entities/postulacion.entity';
+import { PdfGeneratorService } from './puppeteer/pdf-generator.service';
 
 export type TipoReporteAdmin =
   | 'egresados_por_carrera'
@@ -31,54 +30,56 @@ export class ReportesService {
   private readonly logger = new Logger(ReportesService.name);
 
   constructor(
-    @InjectQueue('reportes') private reportQueue: Queue,
     @InjectRepository(Reporte) private reporteRepo: Repository<Reporte>,
     @InjectRepository(Egresado) private egresadoRepo: Repository<Egresado>,
     @InjectRepository(OfertaLaboral) private ofertaRepo: Repository<OfertaLaboral>,
     @InjectRepository(Postulacion) private postulacionRepo: Repository<Postulacion>,
+    private pdfService: PdfGeneratorService,
   ) {}
 
-  async solicitarReporte(user: Usuario, tipo: string, parametros: Record<string, unknown>, template: string, data: Record<string, unknown>): Promise<Reporte> {
-    const reporte = this.reporteRepo.create({
-      nombre_reporte: `${tipo}_${Date.now()}`,
-      tipo_reporte: tipo,
-      parametros,
-      generado_por: user,
-      estado: 'pendiente',
-    });
-    await this.reporteRepo.save(reporte);
-    this.logger.log(`Reporte guardado con id_reporte: ${reporte.id_reporte}`);
-
-    const filename = `${uuidv4()}.pdf`;
-    const outputPath = join(process.cwd(), 'reports', filename);
-    this.logger.log(`Encolando trabajo para generar PDF - reporteId: ${reporte.id_reporte}, outputFile: ${outputPath}`);
-    await this.reportQueue.add('generar-pdf', {
-      reporteId: reporte.id_reporte,
-      template,
-      data,
-      outputFile: outputPath,
-    });
-    return reporte;
-  }
-
-  async obtenerEstado(reporteId: number): Promise<Reporte> {
-    const reporte = await this.reporteRepo.findOneBy({ id_reporte: reporteId });
-    if (!reporte) throw new NotFoundException();
-    return reporte;
-  }
-
-  async listarReportes(usuarioId?: number): Promise<Reporte[]> {
-    const where = usuarioId ? { generado_por: { id_usuario: usuarioId } } : {};
-    return this.reporteRepo.find({ where, order: { fecha_solicitud: 'DESC' } });
-  }
-
-  async solicitarReporteAdmin(
+  async generarReporteSync(
     user: Usuario,
     tipo: TipoReporteAdmin,
-    filtros: ReporteFiltros,
-  ): Promise<Reporte> {
-    const { template, data } = await this.prepararReporte(tipo, filtros);
-    return this.solicitarReporte(user, tipo, filtros as Record<string, unknown>, template, data);
+    filtros: ReporteFiltros = {},
+  ): Promise<{ buffer: Buffer; filename: string }> {
+    try {
+      console.log('tipo:', tipo);
+      console.log('parametros:', filtros);
+      
+      const filtrosValidados = filtros || {};
+      const { template, data } = await this.prepararReporte(tipo, filtrosValidados);
+      
+      console.log('Template:', template);
+      console.log('Data rows count:', data.rows?.length || 0);
+      
+      const html = await this.pdfService.renderTemplate(template, data);
+      console.log('HTML generated, length:', html.length);
+      
+      const filename = `${tipo}_${uuidv4()}.pdf`;
+      const outputPath = join(process.cwd(), 'reports', filename);
+      
+      const { buffer, size } = await this.pdfService.generatePdfFromHtml(html, outputPath);
+      console.log('PDF generated, size:', size);
+      
+      // Guardar registro en BD para historial
+      // TODO: Fix TypeORM update error with Usuario relation
+      // const reporte = this.reporteRepo.create({
+      //   nombre_reporte: filename,
+      //   tipo_reporte: tipo,
+      //   parametros: filtrosValidados as any,
+      //   generado_por: { id_usuario: user.id_usuario } as Usuario,
+      //   estado: 'completado',
+      //   url_pdf: outputPath,
+      //   tamano_bytes: size,
+      //   fecha_completado: new Date(),
+      // });
+      // await this.reporteRepo.save(reporte);
+
+      return { buffer, filename };
+    } catch (error) {
+      console.error('Error in generarReporteSync:', error);
+      throw error;
+    }
   }
 
   private parseFechas(filtros: ReporteFiltros) {

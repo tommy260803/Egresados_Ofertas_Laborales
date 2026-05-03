@@ -22,7 +22,7 @@ export default function ReportesPage() {
   const [carrera, setCarrera] = useState("all");
   const [sector, setSector] = useState("all");
   const [ofertaId, setOfertaId] = useState("all");
-  const { solicitarReporte, reporteEstado, reportes, downloadReporte } = useReportes();
+  const { generarReporteDirecto, isGenerating } = useReportes();
   const { data: egresadosData } = trpc.egresados.list.useQuery();
   const { data: ofertasData } = trpc.ofertas.list.useQuery();
 
@@ -36,7 +36,7 @@ export default function ReportesPage() {
   }, [ofertasData]);
 
   const handleGenerar = async () => {
-    await solicitarReporte.mutateAsync({
+    const paramsToSend = {
       tipo: tipoReporte,
       parametros: {
         fechaDesde: dateRange.from?.toISOString(),
@@ -45,11 +45,15 @@ export default function ReportesPage() {
         sector: sector !== "all" ? sector : undefined,
         ofertaId: ofertaId !== "all" ? Number(ofertaId) : undefined,
       },
-    });
-  };
-
-  const handleDescargar = async () => {
-    if (reporteEstado?.url_pdf) await downloadReporte(reporteEstado.id_reporte);
+    };
+    console.log('page.tsx - tipoReporte:', tipoReporte);
+    console.log('page.tsx - dateRange:', dateRange);
+    console.log('page.tsx - carrera:', carrera);
+    console.log('page.tsx - sector:', sector);
+    console.log('page.tsx - ofertaId:', ofertaId);
+    console.log('page.tsx - paramsToSend:', paramsToSend);
+    
+    await generarReporteDirecto(paramsToSend);
   };
 
   return (
@@ -75,84 +79,65 @@ export default function ReportesPage() {
             <Label>Rango de fechas</Label>
             <DateRangePicker value={dateRange} onChange={(nextRange: { from?: Date; to?: Date } | undefined) => setDateRange(nextRange ?? {})} />
           </div>
-          <div>
-            <Label>Carrera</Label>
-            <Select value={carrera} onValueChange={setCarrera}>
-              <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {carreras.map((item) => (
-                  <SelectItem key={item} value={item}>{item}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Sector</Label>
-            <Select value={sector} onValueChange={setSector}>
-              <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {sectores.map((item) => (
-                  <SelectItem key={item} value={item}>{item}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {tipoReporte === "postulaciones_por_oferta" ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>Oferta</Label>
-              <Select value={ofertaId} onValueChange={setOfertaId}>
-                <SelectTrigger><SelectValue placeholder="Selecciona una oferta" /></SelectTrigger>
+              <Label>Carrera</Label>
+              <Select value={carrera} onValueChange={setCarrera}>
+                <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Seleccionar</SelectItem>
-                  {(ofertasData || []).map((oferta: any) => (
-                    <SelectItem key={oferta.id_oferta} value={String(oferta.id_oferta)}>
-                      {oferta.titulo}
-                    </SelectItem>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {carreras.map((item) => (
+                    <SelectItem key={item} value={item}>{item}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          ) : null}
-          <Button onClick={handleGenerar} disabled={solicitarReporte.isLoading}>
-            {solicitarReporte.isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-            Generar reporte
-          </Button>
-          {reporteEstado && reporteEstado.estado === "pendiente" ? (
-            <p className="text-sm text-slate-300">Generando reporte en cola...</p>
-          ) : null}
-          {reporteEstado && reporteEstado.estado === "completado" && (
-            <div className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-emerald-50">
-              <p>Reporte listo para descargar</p>
-              <Button onClick={handleDescargar} variant="outline" className="mt-2 border-emerald-400/30 bg-transparent text-emerald-50 hover:bg-emerald-500/10">
-                Descargar PDF
-              </Button>
+            <div>
+              <Label>Sector</Label>
+              <Select value={sector} onValueChange={setSector}>
+                <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {sectores.map((item) => (
+                    <SelectItem key={item} value={item}>{item}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {tipoReporte === "postulaciones_por_oferta" && (
+            <div>
+              <Label>Oferta específica</Label>
+              <Select value={ofertaId} onValueChange={setOfertaId}>
+                <SelectTrigger><SelectValue placeholder="Seleccionar oferta" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Seleccionar...</SelectItem>
+                  {Array.isArray(ofertasData) && ofertasData.map((o: any) => (
+                    <SelectItem key={o.id_oferta} value={String(o.id_oferta)}>{o.titulo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
-        </CardContent>
-      </Card>
-      <Card className="mt-6 border-white/10 bg-white/5 text-white shadow-lg shadow-black/10 backdrop-blur">
-        <CardHeader><CardTitle>Reportes recientes</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          {(reportes || []).length === 0 ? (
-            <p className="text-sm text-slate-300">Aún no hay reportes generados.</p>
-          ) : (
-            reportes.map((reporte: any) => (
-              <div key={reporte.id_reporte} className="flex items-center justify-between rounded border border-white/10 p-3">
-                <div>
-                  <p className="font-medium">{reporte.tipo_reporte}</p>
-                  <p className="text-xs text-slate-300">Estado: {reporte.estado}</p>
-                </div>
-                {reporte.estado === "completado" ? (
-                  <Button variant="outline" onClick={() => downloadReporte(reporte.id_reporte)}>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Descargar
-                  </Button>
-                ) : null}
-              </div>
-            ))
-          )}
+
+          <Button 
+            className="w-full bg-primary hover:bg-primary/90" 
+            onClick={handleGenerar}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generando PDF...
+              </>
+            ) : (
+              <>
+                <FileText className="mr-2 h-4 w-4" />
+                Generar y Descargar Reporte
+              </>
+            )}
+          </Button>
         </CardContent>
       </Card>
     </DashboardShell>

@@ -60,7 +60,7 @@ export default function PerfilEgresadoPage() {
     formData.append('file', cvFile);
 
     try {
-      const response = await fetch('http://localhost:4000/api/cv/upload', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/cv/upload`, {
         method: 'POST',
         body: formData,
       });

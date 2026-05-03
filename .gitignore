@@ -64,3 +64,5 @@ reports/
 
 # Worker y logs de colas
 bull-queue-*.log
+
+uploads/

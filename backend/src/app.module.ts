@@ -1,6 +1,5 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { BullModule } from '@nestjs/bull';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { EgresadosModule } from './egresados/egresados.module';
@@ -23,12 +22,6 @@ import { JwtModule } from '@nestjs/jwt';
       }),
     }),
     DatabaseModule,
-    BullModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        redis: { host: config.get('REDIS_HOST'), port: config.get('REDIS_PORT') },
-      }),
-    }),
     AuthModule,
     EgresadosModule,
     OfertasModule,
