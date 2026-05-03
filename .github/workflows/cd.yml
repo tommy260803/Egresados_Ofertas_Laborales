@@ -1,0 +1,46 @@
+name: CD (Deploy)
+
+on:
+  push:
+    branches: [main]
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID_FRONTEND: ${{ secrets.VERCEL_PROJECT_ID_FRONTEND }}
+  RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+  NODE_VERSION: 20
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ---------- FRONTEND (Vercel) ----------
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Deploy Frontend to Vercel
+        working-directory: frontend
+        run: |
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      # ---------- BACKEND + WORKER (Railway) ----------
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy Backend to Railway
+        run: railway up --service=backend --token=${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy Worker to Railway
+        run: railway up --service=worker --token=${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Run migrations on Railway
+        run: |
+          railway run --service=backend "npm run migration:run" --token=${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Notify deployment success
+        if: success()
+        run: echo "🚀 Deployment completed successfully"

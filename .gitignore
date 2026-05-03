@@ -1,0 +1,66 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+.yarn/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+lerna-debug.log*
+
+# Entornos
+.env
+.env.local
+.env.production
+.env.development
+
+# Builds y distribuciones
+dist/
+build/
+.next/
+out/
+.vercel/
+
+# Base de datos local
+*.sqlite
+*.sqlite3
+*.db
+
+# Docker
+docker-compose.override.yml
+
+# IDE y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Tests y coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Archivos temporales
+tmp/
+temp/
+*.tmp
+*.pid
+*.seed
+*.pid.lock
+
+# Reportes generados
+reports/
+*.pdf
+*.xlsx
+
+# Archivos de configuración personal
+*.local
+*.secrets
+
+# Worker y logs de colas
+bull-queue-*.log

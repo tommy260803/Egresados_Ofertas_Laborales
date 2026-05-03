@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>{{titulo}}</title>
+  <style>
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #111827; }
+    h1 { font-size: 18px; margin-bottom: 6px; }
+    .meta { margin-bottom: 12px; color: #4b5563; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #d1d5db; padding: 6px; text-align: left; }
+    th { background: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <h1>{{titulo}}</h1>
+  <div class="meta">
+    <div>Generado: {{generatedAt}}</div>
+    <div>Oferta ID: {{filtros.ofertaId}}</div>
+    <div>Desde: {{filtros.fechaDesde}} | Hasta: {{filtros.fechaHasta}}</div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Oferta</th>
+        <th>Egresado</th>
+        <th>Email</th>
+        <th>Estado</th>
+        <th>Fecha postulacion</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each rows}}
+      <tr>
+        <td>{{this.oferta_titulo}}</td>
+        <td>{{this.egresado}}</td>
+        <td>{{this.email}}</td>
+        <td>{{this.estado_actual}}</td>
+        <td>{{this.fecha_postulacion}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</body>
+</html>
