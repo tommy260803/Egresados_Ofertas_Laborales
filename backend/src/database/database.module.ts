@@ -1,6 +1,6 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { ConfigModule, ConfigService } from "@nestjs/config";
 
 @Module({
   imports: [
@@ -8,17 +8,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get('DB_HOST'),
-        port: config.get('DB_PORT'),
-        username: config.get('DB_USER'),
-        password: config.get('DB_PASSWORD'),
-        database: config.get('DB_NAME'),
+        type: "postgres",
+        host: config.get("DB_HOST"),
+        port: config.get("DB_PORT"),
+        username: config.get("DB_USER"),
+        password: config.get("DB_PASSWORD"),
+        database: config.get("DB_NAME"),
         autoLoadEntities: true,
-        synchronize: true, // Cambiado temporalmente a true para crear las tablas faltantes
-        logging: config.get('NODE_ENV') !== 'production',
-        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+        synchronize: false,
+        logging: config.get("NODE_ENV") !== "production",
+        entities: [__dirname + "/../**/*.entity{.ts,.js}"],
+        migrations: [__dirname + "/migrations/*{.ts,.js}"],
         migrationsRun: false,
       }),
     }),

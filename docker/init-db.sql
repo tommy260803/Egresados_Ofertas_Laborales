@@ -17,6 +17,8 @@ CREATE TABLE usuarios (
     contrasena_hash VARCHAR(255) NOT NULL,
     rol VARCHAR(20) NOT NULL CHECK (rol IN ('administrador', 'egresado', 'empresa')),
     activo BOOLEAN DEFAULT TRUE,
+    invitation_token VARCHAR(255),
+    invitation_expires TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

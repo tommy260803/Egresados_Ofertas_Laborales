@@ -1,7 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
-import { Usuario } from '../../auth/entities/usuario.entity';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+} from "typeorm";
+import { Usuario } from "../../auth/entities/usuario.entity";
 
-@Entity('reportes')
+@Entity("reportes")
 export class Reporte {
   @PrimaryGeneratedColumn()
   id_reporte: number;
@@ -12,26 +19,25 @@ export class Reporte {
   @Column()
   tipo_reporte: string;
 
-  @Column({ type: 'jsonb', nullable: true })
+  @Column({ type: "jsonb", nullable: true })
   parametros: Record<string, unknown>;
 
   @Column({ nullable: true })
   url_pdf: string;
 
-  @ManyToOne(() => Usuario, { onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'generado_por_id' })
+  @ManyToOne(() => Usuario, { onDelete: "SET NULL" })
+  @JoinColumn({ name: "generado_por" })
   generado_por: Usuario;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: "timestamptz" })
   fecha_solicitud: Date;
 
-  @Column({ type: 'timestamptz', nullable: true })
+  @Column({ type: "timestamptz", nullable: true })
   fecha_completado: Date;
 
-  @Column({ default: 'pendiente' })
+  @Column({ default: "pendiente" })
   estado: string;
 
   @Column({ nullable: true })
   tamano_bytes: number;
 }
-
