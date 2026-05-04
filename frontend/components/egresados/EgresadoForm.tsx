@@ -41,9 +41,9 @@ export function EgresadoForm({ initialData, onSubmit, isLoading, isEdit = false 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div className={isEdit ? "opacity-50 pointer-events-none" : ""}>
+        <div className={isEdit ? "opacity-50" : ""}>
           <Label>Email *</Label>
-          <Input {...register("email")} type="email" placeholder="ejemplo@correo.com" />
+          <Input {...register("email")} type="email" placeholder="ejemplo@correo.com" readOnly={isEdit} />
           <p className="text-red-500 text-sm">{errors.email?.message}</p>
         </div>
         <div className="hidden md:block"></div> {/* Espaciador */}
