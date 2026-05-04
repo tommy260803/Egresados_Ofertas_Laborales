@@ -10,7 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { trpc } from "@/lib/trpc/client";
 import { Badge } from "@/components/ui/badge";
 import { X, Loader2 } from "lucide-react";
@@ -26,7 +32,15 @@ const ofertaSchema = z.object({
   tipo_salario: z.string().optional(),
   jornada: z.string().optional(),
   experiencia_requerida: z.string().optional(),
-  fecha_cierre: z.string().optional(),
+  fecha_cierre: z
+    .string()
+    .optional()
+    .refine((val) => {
+      if (!val) return true;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return new Date(val) >= today;
+    }, "La fecha de cierre debe ser hoy o una fecha futura"),
   habilidadesIds: z.array(z.number()).default([]),
 });
 
@@ -35,17 +49,34 @@ type OfertaForm = z.infer<typeof ofertaSchema>;
 export default function NuevaOfertaPage() {
   const router = useRouter();
   const { crearOferta } = useOfertas();
-  const [selectedHabilidades, setSelectedHabilidades] = useState<{id: number, nombre: string}[]>([]);
-  
-  const { data: habilidadesDisponibles } = (trpc as any).habilidades.listar.useQuery();
+  const [selectedHabilidades, setSelectedHabilidades] = useState<
+    { id: number; nombre: string }[]
+  >([]);
 
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<OfertaForm>({
+  const { data: habilidadesDisponibles } = (
+    trpc as any
+  ).habilidades.listar.useQuery();
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<OfertaForm>({
     resolver: zodResolver(ofertaSchema),
+    mode: "onChange",
     defaultValues: {
       modalidad: "presencial",
       habilidadesIds: [],
-    }
+    },
   });
+
+  const fechaCierre = watch("fecha_cierre");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayStr = today.toISOString().split("T")[0];
+  const isFechaInvalid = !!fechaCierre && new Date(fechaCierre) < today;
 
   const onSubmit = async (data: OfertaForm) => {
     try {
@@ -56,24 +87,40 @@ export default function NuevaOfertaPage() {
     }
   };
 
-  const addHabilidad = (h: {id_habilidad: number, nombre_habilidad: string}) => {
-    if (selectedHabilidades.find(sh => sh.id === h.id_habilidad)) return;
-    const newSelection = [...selectedHabilidades, { id: h.id_habilidad, nombre: h.nombre_habilidad }];
+  const addHabilidad = (h: {
+    id_habilidad: number;
+    nombre_habilidad: string;
+  }) => {
+    if (selectedHabilidades.find((sh) => sh.id === h.id_habilidad)) return;
+    const newSelection = [
+      ...selectedHabilidades,
+      { id: h.id_habilidad, nombre: h.nombre_habilidad },
+    ];
     setSelectedHabilidades(newSelection);
-    setValue("habilidadesIds", newSelection.map(s => s.id));
+    setValue(
+      "habilidadesIds",
+      newSelection.map((s) => s.id),
+    );
   };
 
   const removeHabilidad = (id: number) => {
-    const newSelection = selectedHabilidades.filter(h => h.id !== id);
+    const newSelection = selectedHabilidades.filter((h) => h.id !== id);
     setSelectedHabilidades(newSelection);
-    setValue("habilidadesIds", newSelection.map(s => s.id));
+    setValue(
+      "habilidadesIds",
+      newSelection.map((s) => s.id),
+    );
   };
 
   return (
     <DashboardShell>
       <div className="mb-8">
-        <h2 className="text-3xl font-bold tracking-tight text-white">Publicar Nueva Oferta</h2>
-        <p className="text-slate-400">Atrae al mejor talento completando los detalles de la posición</p>
+        <h2 className="text-3xl font-bold tracking-tight text-white">
+          Publicar Nueva Oferta
+        </h2>
+        <p className="text-slate-400">
+          Atrae al mejor talento completando los detalles de la posición
+        </p>
       </div>
 
       <div className="max-w-4xl rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm shadow-xl">
@@ -81,28 +128,39 @@ export default function NuevaOfertaPage() {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="md:col-span-2">
               <Label className="text-slate-200">Título de la posición *</Label>
-              <Input 
-                {...register("titulo")} 
+              <Input
+                {...register("titulo")}
                 placeholder="Ej: Senior Fullstack Developer (Next.js / NestJS)"
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
-              {errors.titulo && <p className="mt-1 text-xs text-rose-400">{errors.titulo.message}</p>}
+              {errors.titulo && (
+                <p className="mt-1 text-xs text-rose-400">
+                  {errors.titulo.message}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">
               <Label className="text-slate-200">Descripción detallada *</Label>
-              <Textarea 
-                {...register("descripcion")} 
-                rows={6} 
+              <Textarea
+                {...register("descripcion")}
+                rows={6}
                 placeholder="Describe las responsabilidades, requisitos y beneficios..."
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
-              {errors.descripcion && <p className="mt-1 text-xs text-rose-400">{errors.descripcion.message}</p>}
+              {errors.descripcion && (
+                <p className="mt-1 text-xs text-rose-400">
+                  {errors.descripcion.message}
+                </p>
+              )}
             </div>
 
             <div>
               <Label className="text-slate-200">Modalidad *</Label>
-              <Select defaultValue="presencial" onValueChange={(val) => setValue("modalidad", val as any)}>
+              <Select
+                defaultValue="presencial"
+                onValueChange={(val) => setValue("modalidad", val as any)}
+              >
                 <SelectTrigger className="mt-1.5 border-white/10 bg-white/5 text-slate-200">
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
@@ -116,35 +174,39 @@ export default function NuevaOfertaPage() {
 
             <div>
               <Label className="text-slate-200">Ubicación</Label>
-              <Input 
-                {...register("ubicacion")} 
+              <Input
+                {...register("ubicacion")}
                 placeholder="Ej: Lima, Perú / Remoto"
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
             </div>
 
             <div>
-              <Label className="text-slate-200">Salario mínimo (opcional)</Label>
-              <Input 
-                type="number" 
-                {...register("salario_minimo", { valueAsNumber: true })} 
+              <Label className="text-slate-200">
+                Salario mínimo (opcional)
+              </Label>
+              <Input
+                type="number"
+                {...register("salario_minimo", { valueAsNumber: true })}
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
             </div>
 
             <div>
-              <Label className="text-slate-200">Salario máximo (opcional)</Label>
-              <Input 
-                type="number" 
-                {...register("salario_maximo", { valueAsNumber: true })} 
+              <Label className="text-slate-200">
+                Salario máximo (opcional)
+              </Label>
+              <Input
+                type="number"
+                {...register("salario_maximo", { valueAsNumber: true })}
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
             </div>
 
             <div>
               <Label className="text-slate-200">Experiencia requerida</Label>
-              <Input 
-                {...register("experiencia_requerida")} 
+              <Input
+                {...register("experiencia_requerida")}
                 placeholder="Ej: 3+ años, Junior, Senior..."
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
@@ -152,26 +214,42 @@ export default function NuevaOfertaPage() {
 
             <div>
               <Label className="text-slate-200">Fecha de cierre</Label>
-              <Input 
-                type="date" 
-                {...register("fecha_cierre")} 
-                className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
+              <Input
+                type="date"
+                min={todayStr}
+                {...register("fecha_cierre")}
+                className={`mt-1.5 border-white/10 bg-white/5 text-slate-200 ${isFechaInvalid ? "border-rose-500" : ""}`}
               />
+              {isFechaInvalid && (
+                <p className="mt-1 text-xs text-rose-400">
+                  ⚠ La fecha de cierre debe ser hoy o una fecha futura
+                </p>
+              )}
+              {!isFechaInvalid && fechaCierre && (
+                <p className="mt-1 text-xs text-emerald-400">✓ Fecha válida</p>
+              )}
             </div>
 
             <div className="md:col-span-2">
               <Label className="text-slate-200">Habilidades requeridas</Label>
               <div className="mt-1.5 space-y-3">
-                <Select onValueChange={(val) => {
-                  const hab = (habilidadesDisponibles as any[])?.find(h => h.id_habilidad === parseInt(val));
-                  if (hab) addHabilidad(hab);
-                }}>
+                <Select
+                  onValueChange={(val) => {
+                    const hab = (habilidadesDisponibles as any[])?.find(
+                      (h) => h.id_habilidad === parseInt(val),
+                    );
+                    if (hab) addHabilidad(hab);
+                  }}
+                >
                   <SelectTrigger className="border-white/10 bg-white/5 text-slate-200">
                     <SelectValue placeholder="Agregar habilidad..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {(habilidadesDisponibles as any[])?.map(h => (
-                      <SelectItem key={h.id_habilidad} value={h.id_habilidad.toString()}>
+                    {(habilidadesDisponibles as any[])?.map((h) => (
+                      <SelectItem
+                        key={h.id_habilidad}
+                        value={h.id_habilidad.toString()}
+                      >
                         {h.nombre_habilidad}
                       </SelectItem>
                     ))}
@@ -179,14 +257,23 @@ export default function NuevaOfertaPage() {
                 </Select>
 
                 <div className="flex flex-wrap gap-2">
-                  {selectedHabilidades.map(h => (
-                    <Badge key={h.id} variant="secondary" className="bg-primary/20 text-primary border-primary/30 flex items-center gap-1 py-1">
+                  {selectedHabilidades.map((h) => (
+                    <Badge
+                      key={h.id}
+                      variant="secondary"
+                      className="bg-primary/20 text-primary border-primary/30 flex items-center gap-1 py-1"
+                    >
                       {h.nombre}
-                      <X className="h-3 w-3 cursor-pointer hover:text-white" onClick={() => removeHabilidad(h.id)} />
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-white"
+                        onClick={() => removeHabilidad(h.id)}
+                      />
                     </Badge>
                   ))}
                   {selectedHabilidades.length === 0 && (
-                    <p className="text-xs text-slate-500 italic">No se han seleccionado habilidades</p>
+                    <p className="text-xs text-slate-500 italic">
+                      No se han seleccionado habilidades
+                    </p>
                   )}
                 </div>
               </div>
@@ -194,25 +281,27 @@ export default function NuevaOfertaPage() {
           </div>
 
           <div className="flex justify-end gap-4 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => router.back()}
               className="border-white/10 text-slate-300 hover:bg-white/5"
             >
               Cancelar
             </Button>
-            <Button 
-              type="submit" 
-              disabled={crearOferta.isLoading}
-              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 px-8"
+            <Button
+              type="submit"
+              disabled={crearOferta.isLoading || isFechaInvalid}
+              className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 px-8 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {crearOferta.isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Publicando...
                 </>
-              ) : "Publicar Oferta"}
+              ) : (
+                "Publicar Oferta"
+              )}
             </Button>
           </div>
         </form>

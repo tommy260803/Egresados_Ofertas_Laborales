@@ -49,20 +49,17 @@ const PieChart = dynamic(
 );
 
 export default function AdminDashboardPage() {
-  const [fechaDesde, setFechaDesde] = useState(
-    format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
-  );
-  const [fechaHasta, setFechaHasta] = useState(
-    format(new Date(), "yyyy-MM-dd"),
-  );
-
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({
+    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    to: new Date(),
+  });
   const [carreraFilter, setCarreraFilter] = useState<string>("all");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
 
   const dashboardFilters = useMemo(
     () => ({
-      from: new Date(fechaDesde),
-      to: new Date(fechaHasta),
+      from: dateRange.from,
+      to: dateRange.to,
       carrera: carreraFilter,
       sector: sectorFilter,
     }),

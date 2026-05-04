@@ -10,7 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { trpc } from "@/lib/trpc/client";
 import { Badge } from "@/components/ui/badge";
 import { X, Loader2, ArrowLeft } from "lucide-react";
@@ -37,15 +43,32 @@ export default function EditarOfertaPage() {
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
-  
+
   const { oferta, isLoading: isLoadingOferta } = useOfertas({ ofertaId: id });
   const updateOferta = (trpc as any).ofertas.update.useMutation();
-  const [selectedHabilidades, setSelectedHabilidades] = useState<{id: number, nombre: string}[]>([]);
-  
-  const { data: habilidadesDisponibles } = (trpc as any).habilidades.listar.useQuery();
+  const [selectedHabilidades, setSelectedHabilidades] = useState<
+    { id: number; nombre: string }[]
+  >([]);
 
-  const { register, handleSubmit, setValue, watch, formState: { errors }, reset } = useForm<OfertaForm>({
+  const { data: habilidadesDisponibles } = (
+    trpc as any
+  ).habilidades.listar.useQuery();
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    setError,
+    formState: { errors },
+    reset,
+  } = useForm<OfertaForm>({
     resolver: zodResolver(ofertaSchema),
+    mode: "onChange",
+    defaultValues: {
+      modalidad: "presencial",
+      habilidadesIds: [],
+    },
   });
 
   useEffect(() => {
@@ -60,10 +83,18 @@ export default function EditarOfertaPage() {
         tipo_salario: oferta.tipo_salario,
         jornada: oferta.jornada,
         experiencia_requerida: oferta.experiencia_requerida,
-        fecha_cierre: oferta.fecha_cierre ? new Date(oferta.fecha_cierre).toISOString().split('T')[0] : null,
-        habilidadesIds: oferta.habilidades?.map((h: any) => h.id_habilidad) || [],
+        fecha_cierre: oferta.fecha_cierre
+          ? new Date(oferta.fecha_cierre).toISOString().split("T")[0]
+          : null,
+        habilidadesIds:
+          oferta.habilidades?.map((h: any) => h.id_habilidad) || [],
       });
-      setSelectedHabilidades(oferta.habilidades?.map((h: any) => ({ id: h.id_habilidad, nombre: h.nombre_habilidad })) || []);
+      setSelectedHabilidades(
+        oferta.habilidades?.map((h: any) => ({
+          id: h.id_habilidad,
+          nombre: h.nombre_habilidad,
+        })) || [],
+      );
     }
   }, [oferta, reset]);
 
@@ -71,22 +102,38 @@ export default function EditarOfertaPage() {
     try {
       await updateOferta.mutateAsync({ id, data });
       router.push("/empresa/ofertas");
-    } catch (error) {
-      console.error("Error al actualizar la oferta:", error);
+    } catch (error: any) {
+      const msg =
+        error?.message ||
+        error?.data?.message ||
+        "Error al actualizar la oferta";
+      setError("root", { message: msg });
     }
   };
 
-  const addHabilidad = (h: {id_habilidad: number, nombre_habilidad: string}) => {
-    if (selectedHabilidades.find(sh => sh.id === h.id_habilidad)) return;
-    const newSelection = [...selectedHabilidades, { id: h.id_habilidad, nombre: h.nombre_habilidad }];
+  const addHabilidad = (h: {
+    id_habilidad: number;
+    nombre_habilidad: string;
+  }) => {
+    if (selectedHabilidades.find((sh) => sh.id === h.id_habilidad)) return;
+    const newSelection = [
+      ...selectedHabilidades,
+      { id: h.id_habilidad, nombre: h.nombre_habilidad },
+    ];
     setSelectedHabilidades(newSelection);
-    setValue("habilidadesIds", newSelection.map(s => s.id));
+    setValue(
+      "habilidadesIds",
+      newSelection.map((s) => s.id),
+    );
   };
 
   const removeHabilidad = (id: number) => {
-    const newSelection = selectedHabilidades.filter(h => h.id !== id);
+    const newSelection = selectedHabilidades.filter((h) => h.id !== id);
     setSelectedHabilidades(newSelection);
-    setValue("habilidadesIds", newSelection.map(s => s.id));
+    setValue(
+      "habilidadesIds",
+      newSelection.map((s) => s.id),
+    );
   };
 
   if (isLoadingOferta) {
@@ -100,13 +147,21 @@ export default function EditarOfertaPage() {
   return (
     <DashboardShell>
       <div className="mb-6">
-        <Button variant="ghost" asChild className="text-slate-400 hover:text-white mb-4">
+        <Button
+          variant="ghost"
+          asChild
+          className="text-slate-400 hover:text-white mb-4"
+        >
           <Link href="/empresa/ofertas">
             <ArrowLeft className="mr-2 h-4 w-4" /> Volver a mis ofertas
           </Link>
         </Button>
-        <h2 className="text-3xl font-bold tracking-tight text-white">Editar Oferta</h2>
-        <p className="text-slate-400">Actualiza los detalles de la posición para atraer candidatos</p>
+        <h2 className="text-3xl font-bold tracking-tight text-white">
+          Editar Oferta
+        </h2>
+        <p className="text-slate-400">
+          Actualiza los detalles de la posición para atraer candidatos
+        </p>
       </div>
 
       <div className="max-w-4xl rounded-xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm shadow-xl">
@@ -114,26 +169,39 @@ export default function EditarOfertaPage() {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="md:col-span-2">
               <Label className="text-slate-200">Título de la posición *</Label>
-              <Input 
-                {...register("titulo")} 
+              <Input
+                {...register("titulo")}
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
-              {errors.titulo && <p className="mt-1 text-xs text-rose-400">{errors.titulo.message}</p>}
+              {errors.titulo && (
+                <p className="mt-1 text-xs text-rose-400">
+                  {errors.titulo.message}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-2">
               <Label className="text-slate-200">Descripción detallada *</Label>
-              <Textarea 
-                {...register("descripcion")} 
-                rows={6} 
+              <Textarea
+                {...register("descripcion")}
+                rows={6}
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
-              {errors.descripcion && <p className="mt-1 text-xs text-rose-400">{errors.descripcion.message}</p>}
+              {errors.descripcion && (
+                <p className="mt-1 text-xs text-rose-400">
+                  {errors.descripcion.message}
+                </p>
+              )}
             </div>
 
             <div>
               <Label className="text-slate-200">Modalidad *</Label>
-              <Select value={watch("modalidad")} onValueChange={(val) => setValue("modalidad", val as any)}>
+              <Select
+                value={watch("modalidad") || "presencial"}
+                onValueChange={(val) =>
+                  setValue("modalidad", val as any, { shouldValidate: true })
+                }
+              >
                 <SelectTrigger className="mt-1.5 border-white/10 bg-white/5 text-slate-200">
                   <SelectValue placeholder="Seleccionar" />
                 </SelectTrigger>
@@ -143,47 +211,56 @@ export default function EditarOfertaPage() {
                   <SelectItem value="hibrido">Híbrido</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.modalidad && (
+                <p className="mt-1 text-xs text-rose-400">
+                  {errors.modalidad.message}
+                </p>
+              )}
             </div>
 
             <div>
               <Label className="text-slate-200">Ubicación</Label>
-              <Input 
-                {...register("ubicacion")} 
+              <Input
+                {...register("ubicacion")}
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
             </div>
 
             <div>
-              <Label className="text-slate-200">Salario mínimo (opcional)</Label>
-              <Input 
-                type="number" 
-                {...register("salario_minimo", { valueAsNumber: true })} 
+              <Label className="text-slate-200">
+                Salario mínimo (opcional)
+              </Label>
+              <Input
+                type="number"
+                {...register("salario_minimo", { valueAsNumber: true })}
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
             </div>
 
             <div>
-              <Label className="text-slate-200">Salario máximo (opcional)</Label>
-              <Input 
-                type="number" 
-                {...register("salario_maximo", { valueAsNumber: true })} 
+              <Label className="text-slate-200">
+                Salario máximo (opcional)
+              </Label>
+              <Input
+                type="number"
+                {...register("salario_maximo", { valueAsNumber: true })}
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
             </div>
 
             <div>
               <Label className="text-slate-200">Experiencia requerida</Label>
-              <Input 
-                {...register("experiencia_requerida")} 
+              <Input
+                {...register("experiencia_requerida")}
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
             </div>
 
             <div>
               <Label className="text-slate-200">Fecha de cierre</Label>
-              <Input 
-                type="date" 
-                {...register("fecha_cierre")} 
+              <Input
+                type="date"
+                {...register("fecha_cierre")}
                 className="mt-1.5 border-white/10 bg-white/5 text-slate-200"
               />
             </div>
@@ -191,16 +268,23 @@ export default function EditarOfertaPage() {
             <div className="md:col-span-2">
               <Label className="text-slate-200">Habilidades requeridas</Label>
               <div className="mt-1.5 space-y-3">
-                <Select onValueChange={(val) => {
-                  const hab = (habilidadesDisponibles as any[])?.find(h => h.id_habilidad === parseInt(val));
-                  if (hab) addHabilidad(hab);
-                }}>
+                <Select
+                  onValueChange={(val) => {
+                    const hab = (habilidadesDisponibles as any[])?.find(
+                      (h) => h.id_habilidad === parseInt(val),
+                    );
+                    if (hab) addHabilidad(hab);
+                  }}
+                >
                   <SelectTrigger className="border-white/10 bg-white/5 text-slate-200">
                     <SelectValue placeholder="Agregar habilidad..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {(habilidadesDisponibles as any[])?.map(h => (
-                      <SelectItem key={h.id_habilidad} value={h.id_habilidad.toString()}>
+                    {(habilidadesDisponibles as any[])?.map((h) => (
+                      <SelectItem
+                        key={h.id_habilidad}
+                        value={h.id_habilidad.toString()}
+                      >
                         {h.nombre_habilidad}
                       </SelectItem>
                     ))}
@@ -208,10 +292,17 @@ export default function EditarOfertaPage() {
                 </Select>
 
                 <div className="flex flex-wrap gap-2">
-                  {selectedHabilidades.map(h => (
-                    <Badge key={h.id} variant="secondary" className="bg-primary/20 text-primary border-primary/30 flex items-center gap-1 py-1">
+                  {selectedHabilidades.map((h) => (
+                    <Badge
+                      key={h.id}
+                      variant="secondary"
+                      className="bg-primary/20 text-primary border-primary/30 flex items-center gap-1 py-1"
+                    >
                       {h.nombre}
-                      <X className="h-3 w-3 cursor-pointer hover:text-white" onClick={() => removeHabilidad(h.id)} />
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-white"
+                        onClick={() => removeHabilidad(h.id)}
+                      />
                     </Badge>
                   ))}
                 </div>
@@ -219,17 +310,22 @@ export default function EditarOfertaPage() {
             </div>
           </div>
 
+          {errors.root && (
+            <p className="rounded-lg bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+              {errors.root.message}
+            </p>
+          )}
           <div className="flex justify-end gap-4 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => router.back()}
               className="border-white/10 text-slate-300 hover:bg-white/5"
             >
               Cancelar
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={updateOferta.isLoading}
               className="bg-emerald-500 text-slate-950 hover:bg-emerald-400 px-8"
             >
@@ -238,7 +334,9 @@ export default function EditarOfertaPage() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Actualizando...
                 </>
-              ) : "Guardar Cambios"}
+              ) : (
+                "Guardar Cambios"
+              )}
             </Button>
           </div>
         </form>

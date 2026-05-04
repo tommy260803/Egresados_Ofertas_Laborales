@@ -103,25 +103,48 @@ export class OfertasService {
   async update(
     id: number,
     empresaId: number,
-    dto: UpdateOfertaDto,
+    dto: any,
   ): Promise<OfertaLaboral> {
     const oferta = await this.findOne(id);
     if (oferta.empresa.id_empresa !== empresaId)
       throw new ForbiddenException("No es tu oferta");
-    await this.ofertaRepo.update(id, dto as any);
+
+    const { habilidadesIds, ...ofertaData } = dto;
+    await this.ofertaRepo.update(id, ofertaData as any);
+
+    if (habilidadesIds !== undefined) {
+      const ofertaActualizada = await this.ofertaRepo.findOne({
+        where: { id_oferta: id },
+        relations: ["habilidades"],
+      });
+      if (ofertaActualizada) {
+        ofertaActualizada.habilidades =
+          habilidadesIds.length > 0
+            ? await this.habilidadRepo.find({
+                where: { id_habilidad: In(habilidadesIds) },
+              })
+            : [];
+        await this.ofertaRepo.save(ofertaActualizada);
+      }
+    }
+
     return this.findOne(id);
   }
 
   async remove(id: number, empresaId: number): Promise<void> {
     const oferta = await this.findOne(id);
     if (oferta.empresa.id_empresa !== empresaId) throw new ForbiddenException();
-    
+
     // Validar que no tenga postulaciones
-    const count = await this.postulacionRepo.count({ where: { oferta: { id_oferta: id } } });
+    const count = await this.postulacionRepo.count({
+      where: { oferta: { id_oferta: id } },
+    });
     if (count > 0) {
-      throw new ForbiddenException('No se puede eliminar una oferta que ya tiene postulaciones. Intente cerrarla en su lugar.');
+      throw new ForbiddenException(
+        "No se puede eliminar una oferta que ya tiene postulaciones. Intente cerrarla en su lugar.",
+      );
     }
-    
+
     await this.ofertaRepo.delete(id);
   }
 
