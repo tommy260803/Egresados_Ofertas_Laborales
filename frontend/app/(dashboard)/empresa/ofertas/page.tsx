@@ -9,12 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
-import { Edit, Trash2, Eye, Loader2, Power, Search, FilterX } from "lucide-react";
+import { Edit, Trash2, Eye, Loader2, Power, PowerOff, Search, FilterX, Plus } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 
 export default function MisOfertasPage() {
   const [filtros, setFiltros] = useState({ titulo: "", activa: "all" });
-  const { misOfertas, isLoading, eliminarOferta, alternarEstado } = useOfertas({ 
+  const { misOfertas, isLoading, eliminarOferta, updateOferta } = useOfertas({ 
     misOfertas: true, 
     filtrosMisOfertas: {
       titulo: filtros.titulo || undefined,
@@ -24,22 +24,36 @@ export default function MisOfertasPage() {
 
   const utils = trpc.useUtils();
 
-  const handleAlternarEstado = async (id: number) => {
+  const handleAlternarEstado = async (id: number, estadoActual: boolean) => {
+    const nuevoEstado = !estadoActual;
+    const accion = nuevoEstado ? "reabrir" : "cerrar";
+    
+    if (!window.confirm(`¿Estás seguro de que deseas ${accion} esta oferta?`)) return;
+
     try {
-      await alternarEstado.mutateAsync(id);
+      await updateOferta.mutateAsync({ 
+        id, 
+        data: { activa: nuevoEstado } 
+      });
       utils.ofertas.misOfertas.invalidate();
-    } catch (error) {
-      console.error("Error al actualizar el estado:", error);
+    } catch (error: any) {
+      alert(error.message || `Error al ${accion} la oferta`);
     }
   };
 
-  const handleEliminar = async (id: number) => {
-    if (!confirm("¿Estás seguro de que deseas eliminar esta oferta? Esta acción no se puede deshacer.")) return;
+  const handleEliminar = async (o: any) => {
+    if (o.total_postulaciones > 0) {
+      alert("No se puede eliminar una oferta que ya tiene postulaciones. Intente cerrarla en su lugar.");
+      return;
+    }
+
+    if (!window.confirm("¿Estás seguro de eliminar esta oferta? Esta acción no se puede deshacer.")) return;
+    
     try {
-      await eliminarOferta.mutateAsync(id);
+      await eliminarOferta.mutateAsync(o.id_oferta);
       utils.ofertas.misOfertas.invalidate();
-    } catch (error) {
-      console.error("Error al eliminar la oferta:", error);
+    } catch (error: any) {
+      alert(error.message || "Error al eliminar la oferta.");
     }
   };
 
@@ -148,7 +162,7 @@ export default function MisOfertasPage() {
                         size="icon" 
                         className={`h-8 w-8 ${o.activa ? 'text-amber-400 hover:bg-amber-500/10' : 'text-emerald-400 hover:bg-emerald-500/10'}`} 
                         title={o.activa ? "Cerrar oferta" : "Reabrir oferta"}
-                        onClick={() => handleAlternarEstado(o.id_oferta)}
+                        onClick={() => handleAlternarEstado(o.id_oferta, o.activa)}
                       >
                         <Power className="h-4 w-4" />
                       </Button>
@@ -157,7 +171,7 @@ export default function MisOfertasPage() {
                         size="icon" 
                         className="h-8 w-8 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300" 
                         title="Eliminar"
-                        onClick={() => handleEliminar(o.id_oferta)}
+                        onClick={() => handleEliminar(o)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

@@ -9,6 +9,14 @@ interface LineChartProps {
 }
 
 export function LineChart({ data, xKey, yKey }: LineChartProps) {
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex h-[300px] items-center justify-center text-slate-400">
+        No hay datos disponibles
+      </div>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <ReLineChart data={data}>

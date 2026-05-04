@@ -5,20 +5,23 @@ import { useReportes } from "@/hooks/use-reportes";
 import { DashboardShell } from "@/components/layouts/DashboardShell";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DateRangePicker } from "@/components/shared/DateRangePicker";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import { format } from "date-fns";
 
 export default function ReportesPage() {
   const [tipoReporte, setTipoReporte] = useState<
     "egresados_por_carrera" | "ofertas_activas" | "postulaciones_por_oferta" | "empleabilidad_por_carrera" | "habilidades_mas_demandadas"
   >("empleabilidad_por_carrera");
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    to: new Date(),
-  });
+  
+  const [fechaDesde, setFechaDesde] = useState(
+    format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")
+  );
+  const [fechaHasta, setFechaHasta] = useState(format(new Date(), "yyyy-MM-dd"));
+
   const [carrera, setCarrera] = useState("all");
   const [sector, setSector] = useState("all");
   const [ofertaId, setOfertaId] = useState("all");
@@ -39,19 +42,13 @@ export default function ReportesPage() {
     const paramsToSend = {
       tipo: tipoReporte,
       parametros: {
-        fechaDesde: dateRange.from?.toISOString(),
-        fechaHasta: dateRange.to?.toISOString(),
+        fechaDesde: new Date(fechaDesde).toISOString(),
+        fechaHasta: new Date(fechaHasta).toISOString(),
         carrera: carrera !== "all" ? carrera : undefined,
         sector: sector !== "all" ? sector : undefined,
         ofertaId: ofertaId !== "all" ? Number(ofertaId) : undefined,
       },
     };
-    console.log('page.tsx - tipoReporte:', tipoReporte);
-    console.log('page.tsx - dateRange:', dateRange);
-    console.log('page.tsx - carrera:', carrera);
-    console.log('page.tsx - sector:', sector);
-    console.log('page.tsx - ofertaId:', ofertaId);
-    console.log('page.tsx - paramsToSend:', paramsToSend);
     
     await generarReporteDirecto(paramsToSend);
   };
@@ -75,10 +72,28 @@ export default function ReportesPage() {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Rango de fechas</Label>
-            <DateRangePicker value={dateRange} onChange={(nextRange: { from?: Date; to?: Date } | undefined) => setDateRange(nextRange ?? {})} />
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-lg bg-white/5 border border-white/10">
+            <div className="space-y-2">
+              <Label className="text-slate-300 font-medium">Fecha de inicio (Desde)</Label>
+              <Input 
+                type="date" 
+                value={fechaDesde} 
+                onChange={(e) => setFechaDesde(e.target.value)}
+                className="bg-slate-950/50 border-white/20 focus:border-primary transition-colors"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300 font-medium">Fecha de fin (Hasta)</Label>
+              <Input 
+                type="date" 
+                value={fechaHasta} 
+                onChange={(e) => setFechaHasta(e.target.value)}
+                className="bg-slate-950/50 border-white/20 focus:border-primary transition-colors"
+              />
+            </div>
           </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Carrera</Label>

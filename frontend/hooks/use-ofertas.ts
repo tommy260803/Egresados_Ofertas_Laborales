@@ -23,6 +23,7 @@ export function useOfertas(params?: UseOfertasParams) {
   const historialPostulacion = (trpc as any).ofertas.historialPostulacion.useQuery(params?.postulacionId || 0, { enabled: !!params?.postulacionId });
 
   const crearOferta = (trpc as any).ofertas.create.useMutation();
+  const updateOferta = (trpc as any).ofertas.update.useMutation();
   const postular = (trpc as any).ofertas.postular.useMutation();
   const cambiarEstado = (trpc as any).ofertas.cambiarEstadoPostulacion.useMutation();
   const eliminarOferta = (trpc as any).ofertas.remove.useMutation();
@@ -46,6 +47,7 @@ export function useOfertas(params?: UseOfertasParams) {
     isError: query.isError || ofertaDetalle.isError || misPostulaciones.isError || historialPostulacion.isError || misOfertas.isError,
     error: query.error || ofertaDetalle.error || misPostulaciones.error || historialPostulacion.error || misOfertas.error,
     crearOferta,
+    updateOferta,
     postular,
     cambiarEstado,
     eliminarOferta,

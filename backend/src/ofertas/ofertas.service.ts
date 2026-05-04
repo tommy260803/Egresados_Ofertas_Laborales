@@ -82,6 +82,13 @@ export class OfertasService {
   async remove(id: number, empresaId: number): Promise<void> {
     const oferta = await this.findOne(id);
     if (oferta.empresa.id_empresa !== empresaId) throw new ForbiddenException();
+    
+    // Validar que no tenga postulaciones
+    const count = await this.postulacionRepo.count({ where: { oferta: { id_oferta: id } } });
+    if (count > 0) {
+      throw new ForbiddenException('No se puede eliminar una oferta que ya tiene postulaciones. Intente cerrarla en su lugar.');
+    }
+    
     await this.ofertaRepo.delete(id);
   }
 

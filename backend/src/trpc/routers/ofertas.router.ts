@@ -27,7 +27,7 @@ export class OfertasRouter {
         if (user.rol !== 'empresa') throw new TRPCError({ code: 'FORBIDDEN' });
         return this.ofertasService.update(input.id, user.userId, input.data);
       }),
-    delete: this.trpc.procedure.input(z.number()).mutation(async ({ input, ctx }) => {
+    remove: this.trpc.procedure.input(z.number()).mutation(async ({ input, ctx }) => {
       const user = (ctx as any).user;
       if (user.rol !== 'empresa') throw new TRPCError({ code: 'FORBIDDEN' });
       await this.ofertasService.remove(input, user.userId);

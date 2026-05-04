@@ -5,28 +5,30 @@ import { useDashboard } from "@/hooks/use-dashboard";
 import { DashboardShell } from "@/components/layouts/DashboardShell";
 import { KpiCard } from "@/components/shared/KpiCard";
 import { BarChart, LineChart, PieChart } from "@/components/charts";
-import { DateRangePicker } from "@/components/shared/DateRangePicker";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Briefcase, FileText, TrendingUp, LucideIcon } from "lucide-react";
+import { Users, Briefcase, FileText, TrendingUp, LucideIcon, Calendar } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
+import { format } from "date-fns";
 
 export default function AdminDashboardPage() {
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    to: new Date(),
-  });
+  const [fechaDesde, setFechaDesde] = useState(
+    format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")
+  );
+  const [fechaHasta, setFechaHasta] = useState(format(new Date(), "yyyy-MM-dd"));
+
   const [carreraFilter, setCarreraFilter] = useState<string>("all");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
 
   const dashboardFilters = useMemo(
     () => ({
-      from: dateRange.from,
-      to: dateRange.to,
+      from: new Date(fechaDesde),
+      to: new Date(fechaHasta),
       carrera: carreraFilter,
       sector: sectorFilter,
     }),
-    [dateRange.from, dateRange.to, carreraFilter, sectorFilter]
+    [fechaDesde, fechaHasta, carreraFilter, sectorFilter]
   );
 
   const { data: egresadosData } = trpc.egresados.list.useQuery();
@@ -66,14 +68,33 @@ export default function AdminDashboardPage() {
           No se pudieron cargar todos los datos del dashboard. Se muestran valores vacios donde corresponde.
         </div>
       ) : null}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold">Dashboard Administrativo</h2>
-        <div className="flex gap-4">
-          <DateRangePicker value={dateRange} onChange={(nextRange: { from?: Date; to?: Date } | undefined) => setDateRange(nextRange ?? {})} />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 bg-white/5 border border-white/10 p-1.5 rounded-lg">
+            <div className="flex items-center gap-2 px-2 border-r border-white/10">
+              <Calendar className="h-4 w-4 text-slate-400" />
+              <Input 
+                type="date" 
+                value={fechaDesde} 
+                onChange={(e) => setFechaDesde(e.target.value)}
+                className="h-8 w-[130px] bg-transparent border-none p-0 text-xs focus-visible:ring-0"
+              />
+            </div>
+            <div className="flex items-center gap-2 px-2">
+              <Input 
+                type="date" 
+                value={fechaHasta} 
+                onChange={(e) => setFechaHasta(e.target.value)}
+                className="h-8 w-[130px] bg-transparent border-none p-0 text-xs focus-visible:ring-0"
+              />
+            </div>
+          </div>
+
           <Select value={carreraFilter} onValueChange={setCarreraFilter}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Carrera" /></SelectTrigger>
+            <SelectTrigger className="w-[160px] h-11 bg-white/5 border-white/10"><SelectValue placeholder="Carrera" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="all">Todas las Carreras</SelectItem>
               {carreras.map((carrera) => (
                 <SelectItem key={carrera} value={carrera}>
                   {carrera}
@@ -81,10 +102,11 @@ export default function AdminDashboardPage() {
               ))}
             </SelectContent>
           </Select>
+
           <Select value={sectorFilter} onValueChange={setSectorFilter}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Sector" /></SelectTrigger>
+            <SelectTrigger className="w-[160px] h-11 bg-white/5 border-white/10"><SelectValue placeholder="Sector" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="all">Todos los Sectores</SelectItem>
               {sectores.map((sector) => (
                 <SelectItem key={sector} value={sector}>
                   {sector}

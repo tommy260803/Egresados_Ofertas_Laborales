@@ -28,22 +28,29 @@ export class DashboardService {
     const finHoy = new Date();
     finHoy.setHours(23, 59, 59, 999);
 
-    const totalEgresadosQb = this.egresadoRepo.createQueryBuilder('e');
+    const totalEgresadosQb = this.egresadoRepo.createQueryBuilder('e')
+      .innerJoin('e.usuario', 'u')
+      .where('u.activo = :activo', { activo: true });
     if (filters?.carrera) {
-      totalEgresadosQb.where('e.carrera = :carrera', { carrera: filters.carrera });
+      totalEgresadosQb.andWhere('e.carrera = :carrera', { carrera: filters.carrera });
     }
     const totalEgresados = await totalEgresadosQb.getCount();
 
-    const totalEmpresasQb = this.empresaRepo.createQueryBuilder('em');
+    const totalEmpresasQb = this.empresaRepo.createQueryBuilder('em')
+      .innerJoin('em.usuario', 'u')
+      .where('u.activo = :activo', { activo: true });
     if (filters?.sector) {
-      totalEmpresasQb.where('em.sector = :sector', { sector: filters.sector });
+      totalEmpresasQb.andWhere('em.sector = :sector', { sector: filters.sector });
     }
     const totalEmpresas = await totalEmpresasQb.getCount();
 
     const ofertasActivasQb = this.ofertaRepo
       .createQueryBuilder('o')
       .innerJoin('o.empresa', 'empresa')
-      .where('o.activa = :activa', { activa: true });
+      .innerJoin('empresa.usuario', 'u')
+      .where('o.activa = :activa', { activa: true })
+      .andWhere('u.activo = :activo', { activo: true })
+      .andWhere('(o.fecha_cierre IS NULL OR o.fecha_cierre >= CURRENT_DATE)');
     if (filters?.sector) {
       ofertasActivasQb.andWhere('empresa.sector = :sector', { sector: filters.sector });
     }
@@ -81,30 +88,28 @@ export class DashboardService {
     const contratados = parseInt(tasaEmpleabilidadRaw.contratados) || 0;
     const tasa = totalEgresados ? (contratados / totalEgresados) * 100 : 0;
 
-    const empleabilidadPorCarreraQb = this.postulacionRepo
-      .createQueryBuilder('p')
-      .innerJoin('p.egresado', 'egresado')
-      .innerJoin('p.oferta', 'oferta')
-      .innerJoin('oferta.empresa', 'empresa')
-      .select('egresado.carrera', 'carrera')
+    const empleabilidadPorCarreraQb = this.egresadoRepo
+      .createQueryBuilder('e')
+      .leftJoin('e.postulaciones', 'p')
+      .innerJoin('e.usuario', 'u')
+      .select('e.carrera', 'carrera')
       .addSelect(
-        "ROUND(100.0 * COUNT(DISTINCT CASE WHEN p.estado_actual = 'contratado' THEN egresado.id_egresado END) / NULLIF(COUNT(DISTINCT egresado.id_egresado), 0), 2)",
+        "ROUND(100.0 * COUNT(DISTINCT CASE WHEN p.estado_actual = 'contratado' THEN e.id_egresado END) / NULLIF(COUNT(DISTINCT e.id_egresado), 0), 2)",
         'tasa_empleabilidad',
       )
-      .groupBy('egresado.carrera')
+      .groupBy('e.carrera')
       .orderBy('tasa_empleabilidad', 'DESC');
+    
     if (filters?.from) {
-      empleabilidadPorCarreraQb.andWhere('p.fecha_postulacion >= :from', { from: filters.from });
+      empleabilidadPorCarreraQb.andWhere('u.created_at >= :from', { from: filters.from });
     }
     if (filters?.to) {
-      empleabilidadPorCarreraQb.andWhere('p.fecha_postulacion <= :to', { to: filters.to });
-    }
-    if (filters?.sector) {
-      empleabilidadPorCarreraQb.andWhere('empresa.sector = :sector', { sector: filters.sector });
+      empleabilidadPorCarreraQb.andWhere('u.created_at <= :to', { to: filters.to });
     }
     if (filters?.carrera) {
-      empleabilidadPorCarreraQb.andWhere('egresado.carrera = :carrera', { carrera: filters.carrera });
+      empleabilidadPorCarreraQb.andWhere('e.carrera = :carrera', { carrera: filters.carrera });
     }
+    
     const empleabilidadPorCarreraRaw = await empleabilidadPorCarreraQb.getRawMany();
     const empleabilidadPorCarrera = empleabilidadPorCarreraRaw.map((item) => ({
       carrera: item.carrera,
@@ -199,22 +204,27 @@ export class DashboardService {
   }
 
   async getTendenciasMensuales(rol: string, id?: number, filters?: DashboardFilters) {
-    // Ejemplo simplificado: postulaciones por mes último año
-    const fechaLimite = new Date(); fechaLimite.setMonth(fechaLimite.getMonth() - 12);
+    const fechaLimite = new Date();
+    fechaLimite.setMonth(fechaLimite.getMonth() - 12);
+    fechaLimite.setDate(1);
+    fechaLimite.setHours(0, 0, 0, 0);
+
     let qb = this.postulacionRepo.createQueryBuilder('p')
-      .innerJoin('p.oferta', 'oferta')
-      .innerJoin('oferta.empresa', 'empresa')
-      .innerJoin('p.egresado', 'egresado')
-      .select("DATE_TRUNC('month', p.fecha_postulacion) as mes")
-      .addSelect('COUNT(*) as total')
+      .leftJoin('p.oferta', 'oferta')
+      .leftJoin('oferta.empresa', 'empresa')
+      .leftJoin('p.egresado', 'egresado')
+      .select("TO_CHAR(p.fecha_postulacion, 'YYYY-MM')", 'mes')
+      .addSelect('COUNT(*)', 'total')
       .where('p.fecha_postulacion >= :fecha', { fecha: fechaLimite })
       .groupBy('mes')
-      .orderBy('mes');
+      .orderBy('mes', 'ASC');
+
     if (rol === 'empresa' && id) {
-      qb.innerJoin('p.oferta', 'o').andWhere('o.empresaIdEmpresa = :eid', { eid: id });
+      qb.andWhere('oferta.empresaIdEmpresa = :eid', { eid: id });
     } else if (rol === 'egresado' && id) {
       qb.andWhere('p.egresadoIdEgresado = :eid', { eid: id });
     }
+
     if (filters?.from) {
       qb.andWhere('p.fecha_postulacion >= :from', { from: filters.from });
     }
@@ -227,29 +237,51 @@ export class DashboardService {
     if (filters?.sector) {
       qb.andWhere('empresa.sector = :sector', { sector: filters.sector });
     }
-    return qb.getRawMany();
+
+    const rawData = await qb.getRawMany();
+    
+    // Mapear para asegurar formato correcto para el frontend
+    return rawData.map(item => ({
+      mes: item.mes,
+      total: parseInt(item.total) || 0
+    }));
   }
 
   async getRankingHabilidades(filters?: DashboardFilters) {
     // Consulta directa usando las tablas existentes
-    const resultado = await this.ofertaRepo
+    const qb = this.ofertaRepo
       .createQueryBuilder('o')
+      .innerJoin('o.habilidades', 'h')
       .innerJoin('o.empresa', 'empresa')
-      .leftJoin('o.postulaciones', 'postulacion')
-      .leftJoin('postulacion.egresado', 'egresado')
+      .leftJoin('o.postulaciones', 'p')
+      .leftJoin('p.egresado', 'egresado')
       .select('h.nombre_habilidad', 'nombre_habilidad')
       .addSelect('COUNT(DISTINCT o.id_oferta)', 'cantidad_ofertas_requieren')
-      .innerJoin('o.habilidades', 'h')
-      .where('o.activa = :activa', { activa: true })
-      .andWhere(filters?.sector ? 'empresa.sector = :sector' : '1=1', { sector: filters?.sector })
-      .andWhere(filters?.carrera ? 'egresado.carrera = :carrera' : '1=1', { carrera: filters?.carrera })
-      .andWhere(filters?.from ? 'o.fecha_publicacion >= :from' : '1=1', { from: filters?.from })
-      .andWhere(filters?.to ? 'o.fecha_publicacion <= :to' : '1=1', { to: filters?.to })
+      .where('o.activa = :activa', { activa: true });
+
+    if (filters?.sector) {
+      qb.andWhere('empresa.sector = :sector', { sector: filters.sector });
+    }
+    if (filters?.carrera) {
+      qb.andWhere('egresado.carrera = :carrera', { carrera: filters.carrera });
+    }
+    if (filters?.from) {
+      qb.andWhere('o.fecha_publicacion >= :from', { from: filters.from });
+    }
+    if (filters?.to) {
+      qb.andWhere('o.fecha_publicacion <= :to', { to: filters.to });
+    }
+
+    const resultado = await qb
       .groupBy('h.id_habilidad')
       .addGroupBy('h.nombre_habilidad')
       .orderBy('cantidad_ofertas_requieren', 'DESC')
       .limit(10)
       .getRawMany();
-    return resultado;
+
+    return resultado.map(item => ({
+      nombre_habilidad: item.nombre_habilidad,
+      cantidad_ofertas_requieren: parseInt(item.cantidad_ofertas_requieren) || 0
+    }));
   }
 }
