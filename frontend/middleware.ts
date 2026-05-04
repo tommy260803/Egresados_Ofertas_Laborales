@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PUBLIC_PATHS = ["/", "/login", "/register"];
+const PUBLIC_PATHS = ["/", "/login", "/register", "/completar-registro"];
 const ACCESS_TOKEN_COOKIE = "accessToken";
 
 function isStaticAsset(pathname: string) {

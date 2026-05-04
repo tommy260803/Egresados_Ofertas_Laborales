@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 
 const createEgresadoSchema = z.object({
+  email: z.string().email(),
   nombres: z.string(),
   apellidos: z.string(),
   documento_identidad: z.string().optional(),
@@ -16,7 +17,7 @@ const createEgresadoSchema = z.object({
   universidad: z.string().optional(),
   anio_graduacion: z.number().min(1950).max(new Date().getFullYear()).optional(),
   perfil_laboral: z.string().optional(),
-  cv_url: z.string().url().optional().nullable(),
+  cv_url: z.string().url().or(z.literal("")).optional().nullable(),
   habilidadesIds: z.array(z.number()).optional(),
 });
 
@@ -77,6 +78,29 @@ eliminarHabilidad: this.trpc.procedure
     if (!user) throw new TRPCError({ code: 'UNAUTHORIZED' });
     if (user.userId !== input.egresadoId && user.rol !== 'administrador') throw new TRPCError({ code: 'FORBIDDEN' });
     return this.egresadosService.removeHabilidad(input.egresadoId, input.habilidadId);
+  }),
+
+invitar: this.trpc.procedure
+  .input(createEgresadoSchema)
+  .mutation(async ({ input, ctx }) => {
+    const user = ctx.user;
+    if (!user || user.rol !== 'administrador') throw new TRPCError({ code: 'UNAUTHORIZED' });
+    return this.egresadosService.invitar(input);
+  }),
+
+validarToken: this.trpc.procedure
+  .input(z.object({ token: z.string() }))
+  .query(async ({ input }) => {
+    return this.egresadosService.validarToken(input.token);
+  }),
+
+completarRegistro: this.trpc.procedure
+  .input(z.object({
+    token: z.string(),
+    contrasena: z.string().min(6),
+  }))
+  .mutation(async ({ input }) => {
+    return this.egresadosService.completarRegistro(input.token, input.contrasena);
   }),
 
   });

@@ -25,9 +25,11 @@ export default function AdminEgresadosPage() {
     <DashboardShell>
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-semibold tracking-tight text-white">Gestión de Egresados</h2>
-        <Link href="/admin/egresados/nuevo">
-          <Button><Plus className="mr-2 h-4 w-4" />Nuevo Egresado</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/admin/egresados/nuevo">
+            <Button><Plus className="mr-2 h-4 w-4" />Nuevo Egresado</Button>
+          </Link>
+        </div>
       </div>
       <div className="flex gap-4 mb-6">
         <div className="relative flex-1">

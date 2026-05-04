@@ -18,12 +18,16 @@ export default function EgresadoDetallePage() {
   return (
     <DashboardShell>
       <div className="mb-4 flex items-center justify-between">
-        <Link href="/admin/egresados">
-          <Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" /> Volver a tabla</Button>
-        </Link>
-        <Link href={`/admin/egresados/${egresado.id_egresado}/editar`}>
-          <Button>Editar</Button>
-        </Link>
+        <Button variant="ghost" asChild>
+          <Link href="/admin/egresados">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Volver a tabla
+          </Link>
+        </Button>
+        <Button asChild>
+          <Link href={`/admin/egresados/${egresado.id_egresado}/editar`}>
+            Editar
+          </Link>
+        </Button>
       </div>
       <Card>
         <CardHeader><CardTitle>Detalle del egresado</CardTitle></CardHeader>

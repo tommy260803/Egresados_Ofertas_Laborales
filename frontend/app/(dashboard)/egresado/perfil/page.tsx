@@ -116,6 +116,7 @@ export default function PerfilEgresadoPage() {
             <CardContent>
               <EgresadoForm 
                 initialData={miPerfil} 
+                isEdit={true}
                 onSubmit={handleSavePerfil}
                 isLoading={update.isLoading}
               />

@@ -20,6 +20,12 @@ export class Usuario {
   @Column({ default: true })
   activo: boolean;
 
+  @Column({ nullable: true })
+  invitation_token: string;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  invitation_expires: Date;
+
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 

@@ -47,6 +47,13 @@ export class AuthService {
         nombres: dto.nombres || '',
         apellidos: dto.apellidos || '',
         carrera: dto.carrera || '',
+        documento_identidad: dto.documento_identidad,
+        telefono: dto.telefono,
+        ciudad: dto.ciudad,
+        universidad: dto.universidad,
+        anio_graduacion: dto.anio_graduacion,
+        perfil_laboral: dto.perfil_laboral,
+        direccion: dto.direccion,
       });
       await this.egresadoRepo.save(egresado);
     } else if (dto.rol === 'empresa') {
@@ -54,6 +61,12 @@ export class AuthService {
         id_empresa: usuario.id_usuario,
         razon_social: dto.razon_social || '',
         ruc: dto.ruc,
+        sector: dto.sector,
+        ciudad: dto.ciudad_empresa,
+        sitio_web: dto.sitio_web,
+        telefono_contacto: dto.telefono_contacto,
+        direccion: dto.direccion_empresa,
+        descripcion: dto.descripcion_empresa,
       });
       await this.empresaRepo.save(empresa);
     }

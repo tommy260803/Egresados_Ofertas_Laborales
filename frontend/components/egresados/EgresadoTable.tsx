@@ -46,9 +46,19 @@ export function EgresadoTable({ data, isLoading, onDelete }: EgresadoTableProps)
             <TableCell>{egresado.carrera}</TableCell>
             <TableCell>{egresado.ciudad}</TableCell>
             <TableCell className="flex gap-2">
-              <Link href={`/admin/egresados/${egresado.id_egresado}`}><Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button></Link>
-              <Link href={`/admin/egresados/${egresado.id_egresado}/editar`}><Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button></Link>
-              <Button variant="ghost" size="icon" className="text-red-600" onClick={() => onDelete?.(egresado.id_egresado)}><Trash2 className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" asChild>
+                <Link href={`/admin/egresados/${egresado.id_egresado}`}>
+                  <Eye className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" asChild>
+                <Link href={`/admin/egresados/${egresado.id_egresado}/editar`}>
+                  <Edit className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" className="text-red-600" onClick={() => onDelete?.(egresado.id_egresado)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </TableCell>
           </TableRow>
         ))}

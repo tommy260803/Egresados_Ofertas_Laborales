@@ -40,7 +40,7 @@ export class Empresa {
   @Column({ default: false })
   verificada: boolean;
 
-  @OneToOne(() => Usuario)
+  @OneToOne(() => Usuario, usuario => usuario.empresa)
   @JoinColumn({ name: 'id_empresa' })
   usuario: Usuario;
 

@@ -11,7 +11,7 @@ import Link from "next/link";
 
 export default function NuevoEgresadoPage() {
   const router = useRouter();
-  const { create } = useEgresados();
+  const { invitar } = useEgresados();
 
   return (
     <DashboardShell>
@@ -19,15 +19,15 @@ export default function NuevoEgresadoPage() {
         <Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" /> Volver a tabla</Button>
       </Link>
       <Card>
-        <CardHeader><CardTitle>Nuevo egresado</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Nuevo egresado e invitación</CardTitle></CardHeader>
         <CardContent>
           <EgresadoForm
             initialData={{}}
             onSubmit={async (data: any) => {
-              await create.mutateAsync(data);
+              await invitar.mutateAsync(data);
               router.push("/admin/egresados");
             }}
-            isLoading={create.isLoading}
+            isLoading={invitar.isPending}
           />
         </CardContent>
       </Card>

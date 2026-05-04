@@ -9,6 +9,6 @@ import { Notificacion } from './entities/notificacion.entity';
   imports: [TypeOrmModule.forFeature([Notificacion])],
   providers: [NotificacionesService, EmailService],
   controllers: [NotificacionesController],
-  exports: [NotificacionesService],
+  exports: [NotificacionesService, EmailService],
 })
 export class NotificacionesModule {}

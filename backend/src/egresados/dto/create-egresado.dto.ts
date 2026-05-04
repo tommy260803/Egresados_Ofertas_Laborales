@@ -44,6 +44,10 @@ export class CreateEgresadoDto {
   @IsOptional()
   perfil_laboral?: string;
 
+  @IsString()
+  @IsOptional()
+  cv_url?: string;
+
   @IsArray()
   @IsInt({ each: true })
   @IsOptional()

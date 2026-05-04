@@ -10,14 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { FileText, ExternalLink } from "lucide-react";
 
 const egresadoSchema = z.object({
-  nombres: z.string().min(1),
-  apellidos: z.string().min(1),
+  email: z.string().email("Email inválido").min(1, "El email es obligatorio"),
+  nombres: z.string().min(1, "El nombre es obligatorio"),
+  apellidos: z.string().min(1, "El apellido es obligatorio"),
   documento_identidad: z.string().optional(),
   fecha_nacimiento: z.string().optional(),
   telefono: z.string().optional(),
   direccion: z.string().optional(),
   ciudad: z.string().optional(),
-  carrera: z.string().min(1),
+  carrera: z.string().min(1, "La carrera es obligatoria"),
   universidad: z.string().optional(),
   anio_graduacion: z.number().optional(),
   perfil_laboral: z.string().optional(),
@@ -26,10 +27,13 @@ const egresadoSchema = z.object({
 
 type EgresadoFormData = z.infer<typeof egresadoSchema>;
 
-export function EgresadoForm({ initialData, onSubmit, isLoading }: any) {
+export function EgresadoForm({ initialData, onSubmit, isLoading, isEdit = false }: any) {
   const { register, handleSubmit, formState: { errors } } = useForm<EgresadoFormData>({
     resolver: zodResolver(egresadoSchema),
-    defaultValues: initialData,
+    defaultValues: {
+      ...initialData,
+      email: initialData?.usuario?.email || initialData?.email || "",
+    },
   });
 
   const cvUrl = initialData?.cv_url;
@@ -37,13 +41,19 @@ export function EgresadoForm({ initialData, onSubmit, isLoading }: any) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
-        <div><Label>Nombres</Label><Input {...register("nombres")} /><p className="text-red-500 text-sm">{errors.nombres?.message}</p></div>
-        <div><Label>Apellidos</Label><Input {...register("apellidos")} /></div>
+        <div className={isEdit ? "opacity-50 pointer-events-none" : ""}>
+          <Label>Email *</Label>
+          <Input {...register("email")} type="email" placeholder="ejemplo@correo.com" />
+          <p className="text-red-500 text-sm">{errors.email?.message}</p>
+        </div>
+        <div className="hidden md:block"></div> {/* Espaciador */}
+        <div><Label>Nombres *</Label><Input {...register("nombres")} /><p className="text-red-500 text-sm">{errors.nombres?.message}</p></div>
+        <div><Label>Apellidos *</Label><Input {...register("apellidos")} /><p className="text-red-500 text-sm">{errors.apellidos?.message}</p></div>
         <div><Label>Documento</Label><Input {...register("documento_identidad")} /></div>
         <div><Label>Fecha nacimiento</Label><Input type="date" {...register("fecha_nacimiento")} /></div>
         <div><Label>Teléfono</Label><Input {...register("telefono")} /></div>
         <div><Label>Ciudad</Label><Input {...register("ciudad")} /></div>
-        <div><Label>Carrera</Label><Input {...register("carrera")} /></div>
+        <div><Label>Carrera *</Label><Input {...register("carrera")} /><p className="text-red-500 text-sm">{errors.carrera?.message}</p></div>
         <div><Label>Universidad</Label><Input {...register("universidad")} /></div>
         <div><Label>Año graduación</Label><Input type="number" {...register("anio_graduacion", { valueAsNumber: true })} /></div>
         <div className="col-span-2">
@@ -69,7 +79,9 @@ export function EgresadoForm({ initialData, onSubmit, isLoading }: any) {
       </div>
       <div><Label>Perfil laboral</Label><Textarea {...register("perfil_laboral")} rows={4} /></div>
       <div><Label>Dirección</Label><Textarea {...register("direccion")} /></div>
-      <Button type="submit" disabled={isLoading}>{isLoading ? "Guardando..." : "Guardar cambios"}</Button>
+      <Button type="submit" disabled={isLoading}>
+        {isLoading ? "Guardando..." : isEdit ? "Guardar cambios" : "Crear e invitar egresado"}
+      </Button>
     </form>
   );
 }

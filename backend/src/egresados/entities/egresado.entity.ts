@@ -56,11 +56,8 @@ export class Egresado {
   @Column({ nullable: true })
   github_url: string;
 
-  @Column({ nullable: true })
-  id_usuario: number;
-
-  @OneToOne(() => Usuario)
-  @JoinColumn({ name: 'id_usuario' })
+  @OneToOne(() => Usuario, usuario => usuario.egresado)
+  @JoinColumn({ name: 'id_egresado' })
   usuario: Usuario;
 
   @ManyToMany(() => Habilidad)

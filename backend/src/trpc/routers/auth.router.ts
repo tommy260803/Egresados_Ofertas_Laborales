@@ -10,8 +10,21 @@ const registerSchema = z.object({
   nombres: z.string().optional(),
   apellidos: z.string().optional(),
   carrera: z.string().optional(),
+  documento_identidad: z.string().optional(),
+  telefono: z.string().optional(),
+  ciudad: z.string().optional(),
+  universidad: z.string().optional(),
+  anio_graduacion: z.number().optional(),
+  perfil_laboral: z.string().optional(),
+  direccion: z.string().optional(),
   razon_social: z.string().optional(),
   ruc: z.string().optional(),
+  sector: z.string().optional(),
+  ciudad_empresa: z.string().optional(),
+  sitio_web: z.string().optional(),
+  telefono_contacto: z.string().optional(),
+  direccion_empresa: z.string().optional(),
+  descripcion_empresa: z.string().optional(),
 });
 
 @Injectable()

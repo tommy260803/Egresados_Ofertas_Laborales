@@ -21,14 +21,17 @@ export default function EditarEgresadoPage() {
 
   return (
     <DashboardShell>
-      <Link href="/admin/egresados" className="mb-4 inline-block">
-        <Button variant="ghost"><ArrowLeft className="mr-2 h-4 w-4" /> Volver a tabla</Button>
-      </Link>
+      <Button variant="ghost" asChild className="mb-4">
+        <Link href="/admin/egresados">
+          <ArrowLeft className="mr-2 h-4 w-4" /> Volver a tabla
+        </Link>
+      </Button>
       <Card>
         <CardHeader><CardTitle>Editar egresado</CardTitle></CardHeader>
         <CardContent>
           <EgresadoForm
             initialData={egresado}
+            isEdit={true}
             onSubmit={async (data: any) => {
               await update.mutateAsync({ id: egresado.id_egresado, data });
               router.push(`/admin/egresados/${egresado.id_egresado}`);
