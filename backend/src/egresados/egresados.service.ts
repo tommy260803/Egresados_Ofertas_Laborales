@@ -60,7 +60,13 @@ export class EgresadosService {
 
   async update(id: number, dto: UpdateEgresadoDto): Promise<Egresado> {
     await this.findOne(id);
-    await this.egresadoRepo.update(id, dto);
+    
+    // El email no pertenece a la entidad Egresado, sino a Usuario.
+    // Lo eliminamos para evitar errores de TypeORM al actualizar.
+    const updateData = { ...dto };
+    delete (updateData as any).email;
+
+    await this.egresadoRepo.update(id, updateData);
     return this.findOne(id);
   }
 

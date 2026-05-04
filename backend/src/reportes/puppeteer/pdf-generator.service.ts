@@ -9,14 +9,22 @@ export class PdfGeneratorService {
   private readonly logger = new Logger(PdfGeneratorService.name);
 
   async generatePdfFromHtml(html: string, outputPath: string): Promise<{ buffer: Buffer, size: number }> {
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
-    const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
-    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true });
-    await browser.close();
-    await fs.mkdir(dirname(outputPath), { recursive: true });
-    await fs.writeFile(outputPath, pdfBuffer);
-    return { buffer: pdfBuffer, size: pdfBuffer.length };
+    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      
+      const pdfBuffer = await page.pdf({ 
+        format: 'A4', 
+        printBackground: true,
+        margin: { top: '0', right: '0', bottom: '0', left: '0' }
+      });
+      await fs.mkdir(dirname(outputPath), { recursive: true });
+      await fs.writeFile(outputPath, pdfBuffer);
+      return { buffer: pdfBuffer, size: pdfBuffer.length };
+    } finally {
+      await browser.close();
+    }
   }
 
   async renderTemplate(templateName: string, data: any): Promise<string> {
@@ -36,6 +44,7 @@ export class PdfGeneratorService {
       }
     }
     const source = await fs.readFile(templatePath, 'utf8');
+    
     const template = handlebars.compile(source);
     return template(data);
   }

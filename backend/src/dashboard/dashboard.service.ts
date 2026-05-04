@@ -288,6 +288,7 @@ export class DashboardService {
     } else if (rol === "egresado" && id) {
       qb.andWhere("egresado.id_egresado = :eid", { eid: id });
     }
+
     if (filters?.from) {
       qb.andWhere("p.fecha_postulacion >= :from", { from: filters.from });
     }
@@ -300,7 +301,14 @@ export class DashboardService {
     if (filters?.sector) {
       qb.andWhere("empresa.sector = :sector", { sector: filters.sector });
     }
-    return qb.getRawMany();
+
+    const rawData = await qb.getRawMany();
+
+    // Mapear para asegurar formato correcto para el frontend
+    return rawData.map((item) => ({
+      mes: item.mes,
+      total: parseInt(item.total) || 0,
+    }));
   }
 
   async getRankingHabilidades(filters?: DashboardFilters) {
@@ -331,6 +339,11 @@ export class DashboardService {
       .orderBy("cantidad_ofertas_requieren", "DESC")
       .limit(10)
       .getRawMany();
-    return resultado;
+
+    return resultado.map((item) => ({
+      nombre_habilidad: item.nombre_habilidad,
+      cantidad_ofertas_requieren:
+        parseInt(item.cantidad_ofertas_requieren) || 0,
+    }));
   }
 }

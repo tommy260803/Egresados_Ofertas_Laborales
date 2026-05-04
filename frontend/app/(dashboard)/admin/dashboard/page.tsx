@@ -49,17 +49,20 @@ const PieChart = dynamic(
 );
 
 export default function AdminDashboardPage() {
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    to: new Date(),
-  });
+  const [fechaDesde, setFechaDesde] = useState(
+    format(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd"),
+  );
+  const [fechaHasta, setFechaHasta] = useState(
+    format(new Date(), "yyyy-MM-dd"),
+  );
+
   const [carreraFilter, setCarreraFilter] = useState<string>("all");
   const [sectorFilter, setSectorFilter] = useState<string>("all");
 
   const dashboardFilters = useMemo(
     () => ({
-      from: dateRange.from,
-      to: dateRange.to,
+      from: new Date(fechaDesde),
+      to: new Date(fechaHasta),
       carrera: carreraFilter,
       sector: sectorFilter,
     }),
@@ -137,7 +140,7 @@ export default function AdminDashboardPage() {
           valores vacios donde corresponde.
         </div>
       ) : null}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <h2 className="text-2xl font-bold">Dashboard Administrativo</h2>
         <div className="flex gap-4">
           <DateRangePicker
@@ -151,7 +154,7 @@ export default function AdminDashboardPage() {
               <SelectValue placeholder="Carrera" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="all">Todas las Carreras</SelectItem>
               {carreras.map((carrera) => (
                 <SelectItem key={carrera} value={carrera}>
                   {carrera}
@@ -159,12 +162,13 @@ export default function AdminDashboardPage() {
               ))}
             </SelectContent>
           </Select>
+
           <Select value={sectorFilter} onValueChange={setSectorFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Sector" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="all">Todos los Sectores</SelectItem>
               {sectores.map((sector) => (
                 <SelectItem key={sector} value={sector}>
                   {sector}

@@ -227,17 +227,19 @@ export class ReportesService {
     if (fechaDesde) contratadosQb.andWhere('p.fecha_postulacion >= :fechaDesde', { fechaDesde });
     if (fechaHasta) contratadosQb.andWhere('p.fecha_postulacion <= :fechaHasta', { fechaHasta });
     const contratados = await contratadosQb.getRawMany();
-    const mapContratados = new Map(contratados.map((item) => [item.carrera, Number(item.contratados)]));
+    
+    // Convertir conteos a números explícitamente (TypeORM devuelve strings para COUNT en Postgres)
+    const mapContratados = new Map(contratados.map((item) => [item.carrera, Number(item.contratados) || 0]));
 
     return egresados.map((item) => {
       const total = Number(item.total_egresados) || 0;
       const contratadosCount = mapContratados.get(item.carrera) || 0;
-      const tasa = total > 0 ? ((contratadosCount / total) * 100).toFixed(2) : '0.00';
+      const tasaNum = total > 0 ? (contratadosCount / total) * 100 : 0;
       return {
         carrera: item.carrera || '-',
         total_egresados: total,
         contratados: contratadosCount,
-        tasa: `${tasa}%`,
+        tasa: `${tasaNum.toFixed(2)}%`,
       };
     });
   }
@@ -250,13 +252,18 @@ export class ReportesService {
       .innerJoin('o.habilidades', 'h')
       .select('h.nombre_habilidad', 'habilidad')
       .addSelect('COUNT(DISTINCT o.id_oferta)', 'cantidad_ofertas')
-      .where('o.activa = true')
+      .where('1=1') // Eliminado o.activa = true para reportes históricos
       .groupBy('h.nombre_habilidad')
       .orderBy('cantidad_ofertas', 'DESC')
       .limit(10);
     if (filtros.sector) qb.andWhere('empresa.sector ILIKE :sector', { sector: `%${filtros.sector}%` });
     if (fechaDesde) qb.andWhere('o.fecha_publicacion >= :fechaDesde', { fechaDesde });
     if (fechaHasta) qb.andWhere('o.fecha_publicacion <= :fechaHasta', { fechaHasta });
-    return qb.getRawMany();
+    
+    const rows = await qb.getRawMany();
+    return rows.map(r => ({
+      habilidad: r.habilidad,
+      cantidad_ofertas: Number(r.cantidad_ofertas) || 0
+    }));
   }
 }
