@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
-export default function CompletarRegistroPage() {
+function CompletarRegistroContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
@@ -18,10 +25,11 @@ export default function CompletarRegistroPage() {
   const [confirmarContrasena, setConfirmarContrasena] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const { data: validacion, isLoading: isValidating } = trpc.egresados.validarToken.useQuery(
-    { token: token || "" },
-    { enabled: !!token }
-  );
+  const { data: validacion, isLoading: isValidating } =
+    trpc.egresados.validarToken.useQuery(
+      { token: token || "" },
+      { enabled: !!token },
+    );
 
   const completarRegistro = trpc.egresados.completarRegistro.useMutation({
     onSuccess: () => {
@@ -94,7 +102,8 @@ export default function CompletarRegistroPage() {
               <AlertCircle /> Invitación inválida
             </CardTitle>
             <CardDescription className="text-slate-400">
-              {validacion?.mensaje || "El enlace de invitación es inválido o ha expirado."}
+              {validacion?.mensaje ||
+                "El enlace de invitación es inválido o ha expirado."}
             </CardDescription>
           </CardHeader>
           <CardFooter>
@@ -114,9 +123,12 @@ export default function CompletarRegistroPage() {
           <div className="flex justify-center mb-4 text-indigo-500">
             <CheckCircle2 className="h-12 w-12" />
           </div>
-          <CardTitle className="text-2xl text-center">Completar Registro</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            Completar Registro
+          </CardTitle>
           <CardDescription className="text-center text-slate-400">
-            Establece tu contraseña para activar tu cuenta como <strong>{validacion.email}</strong>
+            Establece tu contraseña para activar tu cuenta como{" "}
+            <strong>{validacion.email}</strong>
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -152,8 +164,8 @@ export default function CompletarRegistroPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full bg-indigo-600 hover:bg-indigo-700"
               disabled={completarRegistro.isPending}
             >
@@ -170,5 +182,19 @@ export default function CompletarRegistroPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function CompletarRegistroPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-slate-950">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-500 border-t-transparent" />
+        </div>
+      }
+    >
+      <CompletarRegistroContent />
+    </Suspense>
   );
 }
